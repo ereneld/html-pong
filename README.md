@@ -1,26 +1,37 @@
 
+
 # HTML Pong Game
 
-This is a simple Pong game implemented in pure HTML, CSS, and JavaScript.
-
-## How to Play
-- Open `index.html` in your web browser.
-- Control the right paddle using the **Up** and **Down** arrow keys.
-- The left paddle is controlled by a basic AI.
-- Score points by getting the ball past your opponent's paddle.
+This is a modern, feature-rich Pong game implemented in pure HTML, CSS, and JavaScript.
 
 ## Features
-- Classic Pong gameplay
-- Simple AI for left paddle
-- Responsive controls
+
+- **Mouse-controlled paddle:** You play as the left-side goalkeeper, moving your paddle with the mouse (restricted to the gameplay area).
+- **Animated paddles:** Both paddles smoothly grow and shrink in size as you play.
+- **AI opponent:** The computer controls the right paddle with basic tracking logic.
+- **Health bars:** Both players have health bars at the top. Each goal reduces the opponent's health by 10%. The game ends when a health bar reaches zero.
+- **Multiple balls:** After the first goal, a new ball is added for each subsequent goal, with a 1-second delay between each ball's appearance.
+- **Ball trail effect:** Each ball leaves a colorful, animated gradient trail for a retro look.
+- **Dynamic visuals:** The top bar is a very dark gray, and the game area is black for a classic arcade feel.
+- **Game over screen:** Displays the winner in a retro font when the game ends.
+- **Responsive and fast:** Works instantly in any modern browser.
+
+## How to Play
+
+1. Open `index.html` in your web browser, or run a local server:
+	```
+	python3 -m http.server
+	```
+	Then visit [http://localhost:8000](http://localhost:8000).
+2. Move your paddle (left side) using your mouse. The computer controls the right paddle.
+3. Score by getting the ball past the computer. Each goal adds a new ball (with a delay) and reduces health.
+4. The game ends when either health bar reaches zero.
 
 ## Demo
-To view the demo, open `index.html` in your browser.
 
-If you are running in a development container or remote environment, you can use a simple HTTP server:
+You can see a screenshot below (add your own screenshot as `pong-demo.png`):
 
-```
-python3 -m http.server
-```
+![HTML Pong Demo](pong-demo.png)
 
-Then open [http://localhost:8000](http://localhost:8000) in your browser.
+---
+Made with ❤️ using HTML5 Canvas and JavaScript.
