@@ -82,8 +82,10 @@
         ctx.save();
         ctx.fillStyle = '#333';
         ctx.fillRect(x, y, barWidth, barHeight);
-        ctx.fillStyle = health > 30 ? '#0f0' : '#f00';
-        ctx.fillRect(x, y, barWidth * (health / 100), barHeight);
+    ctx.fillStyle = health > 30 ? '#0f0' : '#f00';
+    // Clamp health between 0 and 100 for bar rendering
+    const clampedHealth = Math.max(0, Math.min(100, health));
+    ctx.fillRect(x, y, barWidth * (clampedHealth / 100), barHeight);
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, barWidth, barHeight);
