@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Pong Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body { background: #222; margin: 0; overflow: hidden; }
+    canvas { display: block; margin: 40px auto 0 auto; background: #111; }
+    </style>
+</head>
+<body>
+    <canvas id="pong" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('pong');
+        const ctx = canvas.getContext('2d');
+
+        // Game objects
+    const paddleWidth = 10, basePaddleHeight = 100;
+    let leftPaddleY = canvas.height / 2 - basePaddleHeight / 2;
+    let rightPaddleY = canvas.height / 2 - basePaddleHeight / 2;
+    let paddleHeight = basePaddleHeight;
+        const paddleSpeed = 6;
+
+    const ballSize = 10;
+
+    // Gameplay area margin
+    const topMargin = 80;
+
+    // Array of balls
+    let balls = [];
+    let ballCount = 1;
+    balls = [createBall()];
+
+        function createBall() {
+            return {
+                x: canvas.width / 2 - ballSize / 2,
+                y: topMargin + (canvas.height - topMargin) / 2 - ballSize / 2,
+                speedX: 5 * (Math.random() > 0.5 ? 1 : -1),
+                speedY: 5 * (Math.random() > 0.5 ? 1 : -1),
+                trail: []
+            };
+        }
+
+
+    let leftScore = 0, rightScore = 0;
+
+    // Health bars (start at 100)
+    let playerHealth = 100;
+    let computerHealth = 100;
+
+    // Gameplay area margin
+    // const topMargin = 80; // Removed duplicate
+
+
+        // Mouse control for left paddle (player)
+        canvas.addEventListener('mousemove', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseY = e.clientY - rect.top;
+            // Use animated paddle height for mouse control
+            paddleHeight = getAnimatedPaddleHeight();
+            // Restrict movement to gameplay area only
+            const minY = topMargin;
+            const maxY = canvas.height - paddleHeight;
+            leftPaddleY = mouseY - paddleHeight / 2;
+            leftPaddleY = Math.max(minY, Math.min(maxY, leftPaddleY));
+        });
+
+        function drawRect(x, y, w, h, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+        }
+
+    // Ball tail positions
+    let ballTrail = [];
+    const BALL_TAIL_LENGTH = 10; // Configurable tail length (longer tail)
+
+    // Add missing drawHealthBar function
+    function drawHealthBar(x, y, health, alignRight = false) {
+        const barWidth = 200, barHeight = 20;
+        ctx.save();
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = health > 30 ? '#0f0' : '#f00';
+        ctx.fillRect(x, y, barWidth * (health / 100), barHeight);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, barWidth, barHeight);
+        ctx.restore();
+    }
+
+    // Add missing getAnimatedPaddleHeight function
+    function getAnimatedPaddleHeight() {
+        const t = performance.now() * 0.001;
+        return basePaddleHeight + Math.sin(t) * 20;
+    }
+
+        function drawBall(x, y, size, color, alpha = 1, gradient = null) {
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            if (gradient) {
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = color;
+            }
+            ctx.beginPath();
+            ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        function getBallGradient(x, y, size) {
+            // Dynamic gradient based on ball position and time
+            const grad = ctx.createRadialGradient(
+                x + size / 2, y + size / 2, size * 0.2,
+                x + size / 2, y + size / 2, size / 2
+            );
+            // Animate colors with time
+            const t = performance.now() * 0.002;
+            grad.addColorStop(0, `hsl(${(t * 60) % 360}, 100%, 60%)`);
+            grad.addColorStop(1, `hsl(${(t * 60 + 120) % 360}, 100%, 40%)`);
+            return grad;
+        }
+
+        function drawText(text, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.font = '48px Arial';
+            ctx.fillText(text, x, y);
+        }
+
+
+        function resetBalls() {
+            balls = [];
+            let created = 0;
+            function addBallWithDelay() {
+                balls.push(createBall());
+                created++;
+                if (created < ballCount) {
+                    setTimeout(addBallWithDelay, 1000);
+                }
+            }
+            addBallWithDelay();
+        }
+
+
+        function update() {
+            // End game if health is 0
+            if (playerHealth <= 0 || computerHealth <= 0) return;
+
+            // AI for right paddle (computer)
+            // Use the first ball for AI tracking
+            let mainBall = balls[0];
+            if (mainBall.y < rightPaddleY + paddleHeight / 2) rightPaddleY -= paddleSpeed;
+            if (mainBall.y > rightPaddleY + paddleHeight / 2) rightPaddleY += paddleSpeed;
+            rightPaddleY = Math.max(topMargin, Math.min(canvas.height - paddleHeight, rightPaddleY));
+
+            // Track if a goal happened
+            let goalScored = false;
+
+            // Update all balls
+            balls.forEach(ball => {
+                // Update ball trail
+                ball.trail.unshift({ x: ball.x, y: ball.y });
+                if (ball.trail.length > BALL_TAIL_LENGTH) ball.trail.length = BALL_TAIL_LENGTH;
+
+                // Move ball
+                ball.x += ball.speedX;
+                ball.y += ball.speedY;
+
+                // Ball collision with top/bottom (respect topMargin)
+                if (ball.y <= topMargin || ball.y + ballSize >= canvas.height) ball.speedY *= -1;
+
+                // Ball collision with paddles
+                if (
+                    ball.x <= paddleWidth &&
+                    ball.y + ballSize > leftPaddleY &&
+                    ball.y < leftPaddleY + paddleHeight
+                ) {
+                    ball.speedX *= -1;
+                    ball.x = paddleWidth;
+                }
+                if (
+                    ball.x + ballSize >= canvas.width - paddleWidth &&
+                    ball.y + ballSize > rightPaddleY &&
+                    ball.y < rightPaddleY + paddleHeight
+                ) {
+                    ball.speedX *= -1;
+                    ball.x = canvas.width - paddleWidth - ballSize;
+                }
+
+                // Score & health
+                if (ball.x < 0) {
+                    rightScore++;
+                    playerHealth -= 10;
+                    goalScored = true;
+                }
+                if (ball.x > canvas.width) {
+                    leftScore++;
+                    computerHealth -= 10;
+                    goalScored = true;
+                }
+            });
+
+            // If a goal was scored, increase ball count and reset balls
+            if (goalScored) {
+                ballCount++;
+                resetBalls();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw gray top area
+            drawRect(0, 0, canvas.width, topMargin, '#888');
+            // Draw black gameplay area
+            drawRect(0, topMargin, canvas.width, canvas.height - topMargin, '#111');
+
+            // Health bars only (no text)
+            drawHealthBar(20, topMargin - 30, playerHealth);
+            drawHealthBar(canvas.width - 220, topMargin - 30, computerHealth, true);
+
+            // Game Over
+            if (playerHealth <= 0 || computerHealth <= 0) {
+                ctx.fillStyle = '#f00';
+                ctx.font = '48px "Press Start 2P", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER!', canvas.width / 2, canvas.height / 2 - 30);
+                let winnerMsg = playerHealth <= 0 ? 'AI WINS' : 'PLAYER WINS';
+                ctx.fillText(winnerMsg, canvas.width / 2, canvas.height / 2 + 30);
+                return;
+            }
+
+            // Paddles with border
+            ctx.fillStyle = '#fff';
+            ctx.font = '16px "Press Start 2P", monospace';
+            const animatedPaddleHeight = getAnimatedPaddleHeight();
+            // Player paddle
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 3;
+            ctx.fillRect(0, leftPaddleY, paddleWidth, animatedPaddleHeight);
+            ctx.strokeRect(0, leftPaddleY, paddleWidth, animatedPaddleHeight);
+            ctx.restore();
+            // Computer paddle
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 3;
+            ctx.fillRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, animatedPaddleHeight);
+            ctx.strokeRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, animatedPaddleHeight);
+            ctx.restore();
+
+            // Draw all balls and their tails
+            balls.forEach(ball => {
+                for (let i = BALL_TAIL_LENGTH - 1; i >= 0; i--) {
+                    if (ball.trail[i]) {
+                        let alpha = 0.15 + 0.15 * (BALL_TAIL_LENGTH - i);
+                        let t = i / BALL_TAIL_LENGTH;
+                        let size = ballSize * (0.5 + 0.5 * (1 - Math.pow(t, 3)));
+                        let grad = getBallGradient(ball.trail[i].x, ball.trail[i].y, size);
+                        drawBall(ball.trail[i].x, ball.trail[i].y, size, '#fff', alpha, grad);
+                    }
+                }
+                let mainGrad = getBallGradient(ball.x, ball.y, ballSize);
+                drawBall(ball.x, ball.y, ballSize, '#fff', 1, mainGrad);
+            });
+        }
+
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+    gameLoop();
+    </script>
+</body>
+</html>
