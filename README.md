@@ -32,8 +32,6 @@ This is a modern, feature-rich Pong game implemented in pure HTML, CSS, and Java
 
 You can see a screenshot below (add your own screenshot as `pong-demo.png`):
 
-![HTML Pong Demo](pong-demo.png)
-
 <img width="1786" height="1298" alt="Screenshot 2025-09-26 at 12 19 26 PM" src="https://github.com/user-attachments/assets/8bb4cfa7-a4a3-4982-a2d0-1e8f0e319071" />
 
 ---
